@@ -1,0 +1,29 @@
+name: ci
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm run typecheck --if-present
+      - run: npm run build
+        env:
+          DATABASE_URL: postgres://placeholder
+          DIRECT_URL: postgres://placeholder
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+          SUPABASE_SERVICE_ROLE_KEY: placeholder
+          RESEND_API_KEY: placeholder
+          CRON_SECRET: placeholder
+          ENCRYPTION_MASTER_KEY: 0000000000000000000000000000000000000000000000000000000000000000
