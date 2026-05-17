@@ -1,5 +1,13 @@
 # Time Capsule
 
+![ci](https://github.com/Bobbygkmc/time_capsule/actions/workflows/ci.yml/badge.svg)
+![license](https://img.shields.io/badge/license-Proprietary-red)
+![next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)
+![typescript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+
+![Time Capsule — a glimpse](docs/screenshots/hero.png)
+
+
 A platform for creating digital time capsules — messages, photos, videos, and other mementos locked until a specified unlock date, then optionally delivered to chosen recipients.
 
 ## Stack
