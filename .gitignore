@@ -1,0 +1,56 @@
+# deps
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# builds
+.next/
+out/
+build/
+dist/
+
+# testing
+coverage/
+
+# env
+.env
+.env*.local
+.env.development
+.env.production
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# prisma
+prisma/*.db
+prisma/*.db-journal
+
+# supabase cli
+.supabase/
+
+# misc
+.DS_Store
+*.pem
+Thumbs.db
+*.swp
+*.swo
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+logs/
+*.log
+
+# ide
+.vscode/
+.idea/
+
+# claude code cache
+.claude/cache/
