@@ -21,6 +21,11 @@ next-env.d.ts
 # production
 /build
 
+# prisma generated client — regenerate with `npm run db:generate`
+# NOTE: existing tracked files under generated/ must be untracked separately
+# with `git rm -r --cached generated/` in an explicitly approved commit.
+generated/
+
 # misc
 .DS_Store
 *.pem

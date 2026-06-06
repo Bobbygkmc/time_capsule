@@ -1,10 +1,9 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function sendUnlockEmail(to: string, capsuleTitle: string, capsuleUrl: string) {
+  const resend = new Resend(process.env.RESEND_API_KEY);
   return resend.emails.send({
-    from: "Time Capsule <noreply@yourdomain.com>",
+    from: `Time Capsule <noreply@${new URL(process.env.NEXT_PUBLIC_APP_URL!).hostname}>`,
     to,
     subject: `Your time capsule "${capsuleTitle}" is now open`,
     html: `
