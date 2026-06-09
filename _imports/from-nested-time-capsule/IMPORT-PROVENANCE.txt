@@ -1,0 +1,5 @@
+Quarantined copy of copy "C": ~/workspace/active/timecapsule/time-capsule
+Captured: 2026-05-31T13:27:45-04:00
+Source git: tracked inside ~/workspace/active/timecapsule as the time-capsule/ subdir (commit 64ea677, Apr 25 2026)
+Purpose: read-only reference for porting C's working runtime (cron/email/storage/CRUD) into canonical copy A.
+Nothing here is wired into A's build. node_modules and .next were intentionally excluded.

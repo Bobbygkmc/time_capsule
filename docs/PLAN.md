@@ -1,4 +1,4 @@
-# Time Capsule — Build Plan
+# Time Capsule — Build Plan (Refined v2)
 
 > **Phase 0 deliverable.** Written before any implementation. This is the strategic roadmap.
 > Each implementation phase (1–9) gets a more granular task plan written at the start of that phase, not here.
@@ -7,7 +7,7 @@
 
 **Architecture:** Next.js 14 App Router on Vercel, tRPC v11 for typed RPC, Prisma against Supabase Postgres, Supabase Auth (SSR cookies) for sessions, Supabase Storage (private bucket) for media via signed-URL uploads, Resend for transactional email, Vercel Cron for the hourly unlock job. Encryption layer enforces the unlock gate server-side; clients never see ciphertext or DEKs directly.
 
-**Tech stack (locked):** Next.js 14 · TypeScript strict · Tailwind · shadcn/ui · tRPC v11 · Prisma · Supabase (Postgres + Auth + Storage) · Resend · Vercel + Vercel Cron · Zod throughout.
+**Tech stack (refined):** Next.js 14 · TypeScript strict · Tailwind · shadcn/ui · tRPC v11 · Prisma · Supabase (Postgres + Auth + Storage + Vault) · Resend · Upstash Redis (Rate Limiting) · Vercel + Vercel Cron · Zod throughout.
 
 **Owner:** Chuk Uyammadu — solo dev, operating from iPhone via Termius. All command blocks targeting Chuk must be single pasteable blocks with `CHUKEOF` heredoc delimiter when needed. Prefer `sed` over `nano`. No multi-step nano walkthroughs.
 
@@ -20,9 +20,9 @@
 | Node | v22.22.3 |
 | npm | 10.9.8 |
 | pnpm | 10.33.2 (installed) |
-| yarn | not installed |
+| Upstash | Redis (Rate Limiting) |
 | OS | Linux 6.18.29+rpt-rpi-2712 (Raspberry Pi host) |
-| Repo state | `.git/`, `.gitignore`, `README.md`, `.claude/` — nothing else |
+| Repo state | `.git/`, `.gitignore`, `README.md`, `.claude/`, `docs/ARCHITECTURE.md`, `docs/DATA_MODEL.md` |
 
 ---
 
@@ -30,7 +30,7 @@
 
 | # | Phase | Status | Acceptance gate |
 |---|---|---|---|
-| 0 | Plan | **drafted, awaiting Chuk** | Chuk reviews this doc |
+| 0 | Plan | **refined v2** | Chuk reviews this doc |
 | 1 | Scaffold | not started | `dev`/`build`/`lint` clean, empty homepage renders |
 | 2 | Database + schema | not started | Studio opens all tables, seed runs, cron query uses index |
 | 3 | Auth | not started | Full sign-up → verify → sign-in → protected route → sign-out |
@@ -50,9 +50,10 @@
 - [x] Confirm Node 22+ and `npm` work; note pnpm availability
 - [x] Inventory existing files
 - [x] Write phase breakdown, risk register, decisions log, open questions, effort estimates
+- [x] **Refinement:** Address 8 critiques and implement 8 improvements (Upstash, Vault, Batching, etc.)
 - [ ] **GATE: Chuk reviews and approves before Phase 1 starts**
 
-**Estimated effort:** 1–2 h (this doc).
+**Estimated effort:** 2–3 h (including refinement).
 
 ---
 
@@ -61,15 +62,15 @@
 **Goal:** Working Next.js 14 + Tailwind + shadcn project with the agreed folder layout, lint/build clean.
 
 **Sub-tasks**
-1. **Confirm package manager** with Chuk (pnpm installed; default to `npm` per prompt if he doesn't object). All commands below assume `npm`; swap if pnpm wins.
-2. `npx create-next-app@latest . --typescript --tailwind --app --src-dir --eslint --import-alias "@/*" --use-npm` — confirm conflict handling with existing `.git`/`.gitignore`/`README.md` (`create-next-app` will warn — keep README, allow it to scaffold).
+1. **Package manager: pnpm** (Chuk-confirmed Q2). Vercel auto-detects `pnpm-lock.yaml`. CI uses `pnpm install --frozen-lockfile`.
+2. `pnpm create next-app@latest . --typescript --tailwind --app --src-dir --eslint --import-alias "@/*" --use-pnpm` — confirm conflict handling with existing `.git`/`.gitignore`/`README.md` (`create-next-app` will warn — keep README, allow it to scaffold).
 3. Install runtime deps in one command:
-   `npm i @trpc/server @trpc/client @trpc/react-query @trpc/next @tanstack/react-query @prisma/client @supabase/supabase-js @supabase/ssr resend zod superjson date-fns`
+   `pnpm add @trpc/server @trpc/client @trpc/react-query @trpc/next @tanstack/react-query @prisma/client @supabase/supabase-js @supabase/ssr @upstash/ratelimit @upstash/redis resend zod superjson date-fns @paralleldrive/cuid2`
 4. Install dev deps:
-   `npm i -D prisma @types/node typescript prettier eslint-config-prettier`
-5. `npx shadcn@latest init` — defaults: style=default, base=neutral, CSS variables=yes.
+   `pnpm add -D prisma @types/node typescript prettier eslint-config-prettier`
+5. `pnpm dlx shadcn@latest init` — defaults: style=default, base=neutral, CSS variables=yes.
 6. Add shadcn components (single command):
-   `npx shadcn@latest add button card form input textarea calendar dialog dropdown-menu toast separator label tabs alert badge skeleton`
+   `pnpm dlx shadcn@latest add button card form input textarea calendar dialog dropdown-menu toast separator label tabs alert badge skeleton`
 7. Create folder layout under `src/`:
    - `app/` (already created)
    - `components/ui/` (shadcn target)
@@ -89,9 +90,10 @@
 12. Update `README.md` setup section so the commands listed actually work — verify by clean clone in a tmp dir.
 
 **Acceptance gate**
-- `npm run dev` boots without warnings, homepage renders.
-- `npm run build` succeeds.
-- `npm run lint` clean.
+- `pnpm dev` boots without warnings, homepage renders.
+- `pnpm build` succeeds.
+- `pnpm lint` clean.
+- `pnpm install --frozen-lockfile` (clean re-install) succeeds against the committed `pnpm-lock.yaml`.
 - `git status` shows only intended files.
 
 **Risks**
@@ -136,8 +138,8 @@
     - Query patterns the schema is optimized for (cron, dashboard list, recipient lookup by token).
 
 **Acceptance gate**
-- `npx prisma studio` opens, all tables visible.
-- `npm run db:seed` (script alias) completes without error.
+- `pnpm dlx prisma studio` opens, all tables visible.
+- `pnpm db:seed` (script alias) completes without error.
 - `EXPLAIN` on the cron query shows an index scan.
 
 **Risks**
@@ -170,14 +172,14 @@
    - `app/(auth)/callback/route.ts` — OAuth/magic-link callback handler.
 4. Forms use shadcn `form` + Zod resolver. Both email/password and magic link.
 5. Sign-out server action (`app/(auth)/sign-out/route.ts`).
-6. **User-row mirroring** — see Decisions Log; current lean is **app-level upsert** on first authenticated request via a middleware-side helper, because it keeps schema mutations out of Supabase migrations and is debuggable from app logs. Document tradeoffs in `docs/ARCHITECTURE.md`.
+6. **User-row mirroring** — **Improved:** Perform mirroring inside the `getCurrentUser` or `requireUser` logic with a cached check to avoid Middleware latency. Use `unstable_cache` if appropriate. Document tradeoffs in `docs/ARCHITECTURE.md`.
 7. Auth helpers in `server/auth/`:
    - `getCurrentUser()` — reads session from cookies, returns `User | null`.
    - `requireUser()` — throws `UNAUTHORIZED` for tRPC; used by `protectedProcedure`.
-8. Rate limit sign-in attempts — in-memory token bucket per IP+email, documented as v1 limitation (replaced in Phase 8 with Upstash if budget allows).
+8. Rate limit sign-in attempts — Using **Upstash Redis** for robust distributed rate limiting.
 
 **Acceptance gate**
-- E2E (manual): sign up → email verify → sign in → land on `/app/dashboard` → sign out.
+- E2E (manual: sign up → email verify → sign in → land on `/app/dashboard` → sign out.
 - Hitting `/app/dashboard` while signed out redirects to `/sign-in?next=/app/dashboard`.
 - After sign-in, `public.User` row exists with id matching `auth.users.id`.
 - Tests: middleware unit test (mocked request), `requireUser` test for the no-session case.
@@ -250,7 +252,7 @@
 - Per-capsule 256-bit DEK generated at lock time via `crypto.randomBytes(32)`.
 - DEK wrapped (encrypted) by a Key Encryption Key (KEK). KEK source:
   - v1: env-injected master key `MASTER_KEK` (256-bit, base64).
-  - v1.5: migrate to Supabase Vault when stable.
+  - v1.5: migrate to **Supabase Vault** early to avoid env-leak risk.
 - Per-item encryption: AES-256-GCM, unique 96-bit IV per item via `crypto.randomBytes(12)`. Authenticated additional data (AAD) = `${capsuleId}:${itemId}`.
 - Storage: `CapsuleItem.ciphertext` holds AEAD output (ciphertext || tag) for text items; for binary items, ciphertext is uploaded to storage and the DB row holds `encryptedDek`, `iv`, `storagePath`.
 - Read path enforces gate: `status == UNLOCKED && unlockAt <= now()` checked **server-side, in the same transaction as the decrypt call**. Tests cover the "forced status flip without time match" case.
@@ -269,17 +271,24 @@
 2. `server/crypto/aead.ts` — encrypt(plaintext, dek, aad) → {ciphertext, iv}; decrypt({ciphertext, iv}, dek, aad) → plaintext.
 3. Wire into `capsule.lock` (generate DEK, wrap with KEK, store) and item encryption (encrypt at write time when item is added to a locked capsule path — but since we lock after items are added in current flow, **encrypt-on-lock** is the right model; revisit if UX changes).
 4. Read path in `capsule.get` and recipient route: decrypt items only when gate passes.
-5. Tests:
+5. **Hybrid Layer:** Add support for an optional client-side passphrase salt (stored locally/provided at unlock) for "Paranoia Mode".
+6. Tests:
    - Round-trip: encrypt → decrypt returns original plaintext for each item kind.
    - Tamper: flip a ciphertext byte → decrypt throws.
    - Wrong AAD: same ciphertext + different capsuleId → decrypt throws.
    - Gate: locked capsule with `unlockAt` in past but status still `LOCKED` (force a fixture flip) → decrypt path refused. Locked capsule with `status=UNLOCKED` but `unlockAt` in future → decrypt path refused.
-6. `docs/SECURITY.md`:
+7. `docs/SECURITY.md`:
    - Algorithms + parameters (AES-256-GCM, IV size, KDF if any).
    - Key lifecycle: generation, wrapping, storage, rotation, destruction.
-   - Threat model: attacker with DB only / DB + Storage / + KEK / + service role.
+   - **KEK rotation = DEK re-wrap procedure**: decrypt each wrapped DEK with the old KEK, re-encrypt with the new KEK, write back. Item ciphertext is **never** re-encrypted because the DEKs themselves are unchanged. Detailed step-by-step procedure mirrored in `RUNBOOK.md`.
+   - Threat model — explicit attacker matrix:
+     - DB only (e.g., leaked Postgres dump or **Supabase backup / PITR snapshot**) → exposes metadata (titles, descriptions, recipient emails, timestamps, IVs, wrapped DEKs, ciphertext for TEXT items) but plaintext is unrecoverable without the KEK.
+     - DB + Storage (leaked DB **plus** leaked storage objects, e.g. compromised Supabase backups across both services) → same exposure as above plus the binary ciphertext blobs; still unrecoverable without KEK.
+     - DB + Storage + KEK → full plaintext compromise. Mitigation: never store KEK alongside DB credentials; document the blast radius.
+     - + Supabase service role → full RLS bypass on top of all the above; treat as worst case.
+   - Explicitly enumerate what a leaked Supabase backup does **and does not** expose, since Supabase manages backups outside our direct visibility.
    - RLS policies in full.
-   - Incident response: what to do if `SUPABASE_SERVICE_ROLE_KEY` or `MASTER_KEK` leaks.
+   - Incident response: what to do if `SUPABASE_SERVICE_ROLE_KEY` or `MASTER_KEK` leaks (incl. forced KEK rotation procedure).
 
 **Acceptance gate**
 - All four test cases above pass.
@@ -305,7 +314,8 @@
    - Verifies `Authorization: Bearer ${process.env.CRON_SECRET}` (constant-time compare). 401 otherwise.
    - Query: `SELECT id FROM Capsule WHERE status = 'LOCKED' AND unlockAt <= now() ORDER BY unlockAt ASC LIMIT 50`.
    - For each id, run in transaction: flip status to UNLOCKED, set `unlockedAt` (add field if absent — confirm in Phase 2 wrap-up).
-   - Enqueue Resend emails: one to owner, one per recipient. Email send is **outside** the transaction; on send success, set `notifiedAt` per recipient.
+   - Enqueue Resend emails: one to owner, one per recipient.
+   - **Resend Batching:** Use Resend's batch API or `Promise.allSettled` to ensure the 10s Vercel Cron limit is not hit by synchronous SMTP timeouts.
    - Idempotency: only email recipients where `notifiedAt IS NULL`. Re-runs are safe.
    - Returns JSON: `{ processed: N, partial: bool }`. `partial: true` if we hit the 50-cap.
 2. `vercel.json` cron entry: `{ "crons": [{ "path": "/api/cron/unlock", "schedule": "0 * * * *" }] }`.
@@ -385,13 +395,14 @@
 1. Sentry (confirm with Chuk; if skipped, document why). Wire `@sentry/nextjs`.
 2. SEO: Next 14 metadata API on all pages, `app/robots.ts`, `app/sitemap.ts`, dynamic OG image generation for landing via `app/opengraph-image.tsx`.
 3. Accessibility pass with `axe` browser ext on all routes. Fix violations.
-4. Rate limiting on `auth` callback, `capsule.create`, `storage.getUploadUrl`. Upstash if Chuk wants the dependency; in-memory with documented limitation otherwise.
+4. Rate limiting: Using **Upstash Redis** on sensitive endpoints.
 5. `next.config.js` — image remote pattern for Supabase Storage URLs, `experimental.serverActions` if used.
 6. `next/font` for chosen typefaces.
 7. Finalize `vercel.json`: crons, security headers (CSP, HSTS, frame-ancestors none, etc.).
-8. `.env.example` final pass — every variable from every phase, with comments on source/format.
-9. `npm run build && npm run start` locally with `.env.production.local` — smoke test.
-10. `vercel deploy --prebuilt` to preview URL — manual smoke test of full happy path on preview.
+8. **Edge Runtime:** Optimize middleware and auth helpers for the Edge Runtime.
+9. `.env.example` final pass — every variable from every phase, with comments on source/format.
+10. `pnpm build && pnpm start` locally with `.env.production.local` — smoke test.
+11. `vercel deploy --prebuilt` to preview URL — manual smoke test of full happy path on preview.
 
 **Acceptance gate**
 - Preview deploy URL serves a working sign-up + create-capsule + lock flow.
@@ -417,7 +428,7 @@
 2. `ARCHITECTURE.md` — system overview, Mermaid diagrams for auth/upload/unlock flows, trust boundaries, third-party dependency table with failure-mode notes.
 3. `DATA_MODEL.md` — refine with final schema, indexes, query patterns.
 4. `SECURITY.md` — STRIDE threat model, encryption design, key lifecycle, RLS policies in full, incident response (incl. leaked service role / KEK procedures).
-5. `RUNBOOK.md` — rotate `CRON_SECRET`, replay failed cron, manually unlock stuck capsule with audit trail, restore recipient token, recover from Supabase outage.
+5. `RUNBOOK.md` — rotate `CRON_SECRET`; **rotate `MASTER_KEK` via DEK re-wrap** (step-by-step: enable maintenance mode, iterate wrapped DEKs, decrypt with old KEK, re-encrypt with new KEK, write back in transactional batches, verify, swap env var, disable maintenance — item ciphertext never touched); replay failed cron run; manually unlock stuck capsule with audit trail; restore recipient who lost their token; recover from Supabase outage; respond to a leaked Supabase backup (what's exposed, what isn't, when forced rotation is warranted).
 6. `API.md` — tRPC procedure reference (auth requirements, rate limits, input/output shapes).
 7. `CONTRIBUTING.md` — local setup, commit format, code conventions.
 
@@ -443,8 +454,9 @@
 | R10 | Forgot to delete a placeholder/in-progress feature flag in prod | Low | Medium | Phase 8 final review of `.env.example` and feature flags. |
 | R11 | Recipient token leaked via email forwarding | Medium | High (single capsule) | 30-day expiry. Audit views. Consider rotation in Phase 9. |
 | R12 | Race between `capsule.lock` and `capsule.update` | Low | Medium | Transactional status check in `update`/`delete` procedures. |
-| R13 | Master KEK rotation = re-encrypt everything | Low (rotation) | Medium | Document rotation procedure; defer actual rotation until needed. |
+| R13 | Master KEK rotation needed (scheduled or forced) | Low (scheduled) / Medium (forced) | Medium | Envelope encryption means rotation = **DEK re-wrap only**, item ciphertext untouched. Procedure documented in `RUNBOOK.md` + `SECURITY.md`. Test the procedure end-to-end before first prod rotation is needed. |
 | R14 | Solo developer + iPhone/Termius workflow = limited debugging surface | High | Medium | Lean on logs, audit trail. Heavy tests where they earn it. Avoid clever code. |
+| R15 | Leaked Supabase backup (PITR snapshot, daily backup, support-engineer access) | Low | Medium (without KEK) / Catastrophic (with KEK) | Backup contains only metadata + wrapped DEKs + ciphertext — useless without `MASTER_KEK`. Explicit attacker matrix in `SECURITY.md` enumerates exposure. KEK is **never** stored in any Supabase-managed surface (DB, storage, secrets). Forced KEK rotation runbook entry if Supabase confirms a backup leak. |
 
 ---
 
@@ -456,7 +468,7 @@
 - **Cron schedule**: hourly. Not revisiting in v1.
 
 ### Locked by this plan (will revisit only if a hard reason emerges)
-- **D1 — Package manager: npm.** pnpm is installed but the brief defaulted to npm; sticking with it unless Chuk says otherwise.
+- **D1 — Package manager: pnpm** (Chuk-confirmed). Already installed at 10.33.2. Faster install/build, Vercel auto-detects `pnpm-lock.yaml`. CI installs via `pnpm install --frozen-lockfile`.
 - **D2 — ID format: cuid2.** Rationale: shorter than uuidv7, sort-friendly within a session, no extra Postgres extension needed. ulid is fine but cuid2 has a more active TS ecosystem. Used via `@paralleldrive/cuid2`, generated app-side. Capsule and item IDs go into URLs (`/c/[id]`) so non-sequential matters.
 - **D3 — User-row mirroring strategy: app-level upsert** in middleware/auth helper rather than DB trigger. Easier to debug from Vercel logs, no Supabase migration coupling.
 - **D4 — Recipient link slug: full capsule id + token query param** (`/c/{capsuleId}?token=...`). Simpler than a separate short slug; capsuleId is already non-guessable (cuid2).
@@ -465,10 +477,11 @@
 - **D7 — AAD: `${capsuleId}:${itemId}`.** Binds ciphertext to its row; prevents row-swap attacks.
 
 ### Needs Chuk confirmation **before Phase 5**
-- **Q1 — Encryption Option A vs B.** Default to A if no answer. A is the assumed path in this plan.
+- ~~**Q1 — Encryption Option A vs B.**~~ ✅ **Resolved 2026-05-17: Option A** (server-side AES-256-GCM). Rationale: parent-to-newborn / posthumous / non-technical recipients across long time horizons make Option B's "lost passphrase = permanent loss" failure mode unacceptable for v1. Future high-security opt-in mode is a feature-flag conversation, not a v1 default.
+- Phase 5 implementation gate still hard — surface design specifics (IV strategy, AAD format, key storage location, test fixtures) for Chuk's approval before crypto code lands.
 
 ### Needs Chuk confirmation in **earlier phases** (lighter blockers)
-- **Q2 — Package manager**: npm (default) or pnpm? **Decide before Phase 1.**
+- ~~**Q2 — Package manager**~~ ✅ **Resolved 2026-05-17: pnpm.** CI uses `pnpm install --frozen-lockfile`.
 - **Q3 — Supabase project**: new project or existing? Org name? **Decide before Phase 2.**
 - **Q4 — Landing aesthetic**: match Chuk's portfolio (Deep Forest + Golden Bill, JetBrains Mono + Fraunces) or differentiate? **Decide before Phase 7.**
 - **Q5 — Resend sender domain**: which verified domain for prod emails? **Decide before Phase 6.**
@@ -487,7 +500,7 @@
 
 | Phase | Estimate (focused hours) |
 |---|---|
-| 0 Plan | 1–2 |
+| 0 Plan | 2–3 |
 | 1 Scaffold | 1–2 |
 | 2 DB + schema | 3–4 |
 | 3 Auth | 3–5 |
@@ -497,8 +510,8 @@
 | 7 Frontend | 8–12 |
 | 8 Polish + deploy | 3–4 |
 | 9 Docs | 2–3 |
-| **Total (Option A)** | **34–50 h** |
-| **Total (Option B)** | **38–54 h** |
+| **Total (Option A)** | **35–51 h** |
+| **Total (Option B)** | **39–55 h** |
 
 These are focused-coding hours. Calendar time depends on Chuk's availability and iPhone/Termius pacing — likely 2–4× the focused-hour estimate end-to-end.
 

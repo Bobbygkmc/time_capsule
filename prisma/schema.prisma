@@ -1,0 +1,89 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum CapsuleStatus {
+  DRAFT
+  LOCKED
+  UNLOCKED
+}
+
+enum ItemKind {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  FILE
+}
+
+model User {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String    @unique
+  name      String?
+  createdAt DateTime  @default(now())
+  capsules  Capsule[]
+}
+
+model Capsule {
+  id               String           @id @default(cuid())
+  ownerId          String           @db.Uuid
+  title            String
+  description      String?
+  unlockAt         DateTime
+  status           CapsuleStatus    @default(DRAFT)
+  encryptedDek     Bytes?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  lockedAt         DateTime?
+  owner            User             @relation(fields: [ownerId], references: [id])
+  items            CapsuleItem[]
+  recipients       CapsuleRecipient[]
+
+  @@index([status, unlockAt])
+  @@index([ownerId])
+}
+
+model CapsuleItem {
+  id          String   @id @default(cuid())
+  capsuleId   String
+  kind        ItemKind
+  storagePath String?
+  mimeType    String?
+  sizeBytes   Int?
+  ciphertext  Bytes?
+  iv          Bytes?
+  orderIndex  Int
+  capsule     Capsule  @relation(fields: [capsuleId], references: [id], onDelete: Cascade)
+
+  @@index([capsuleId, orderIndex])
+}
+
+model CapsuleRecipient {
+  id          String   @id @default(cuid())
+  capsuleId   String
+  email       String
+  name        String?
+  notifiedAt  DateTime?
+  viewedAt    DateTime?
+  accessToken String   @unique
+  capsule     Capsule  @relation(fields: [capsuleId], references: [id], onDelete: Cascade)
+
+  @@index([accessToken])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?  @db.Uuid
+  action     String
+  targetType String
+  targetId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+}

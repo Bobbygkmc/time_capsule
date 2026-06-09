@@ -1,0 +1,4 @@
+C's real .env (with secret values) was intentionally NOT copied into this quarantine
+to avoid bringing secrets into copy A's tree. The original remains at
+~/workspace/active/timecapsule/time-capsule/.env and in the consolidation backup.
+Only .env.example (names only) is retained here.

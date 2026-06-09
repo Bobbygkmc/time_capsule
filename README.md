@@ -16,7 +16,8 @@ A platform for creating digital time capsules — messages, photos, videos, and 
 - Tailwind + shadcn/ui
 - tRPC v11
 - Prisma → Supabase Postgres
-- Supabase Auth (SSR cookies) + Storage
+- Supabase Auth (SSR cookies) + Storage + Vault
+- Upstash Redis (Rate Limiting)
 - Resend for email
 - Vercel hosting + Vercel Cron for unlock scheduling
 
@@ -42,20 +43,22 @@ See `.env.example`. Required at minimum:
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `RESEND_API_KEY`
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
 - `CRON_SECRET` — shared secret for the unlock cron endpoint
 
 ## Deploy
 
-Push to `main`. Vercel auto-deploys. Cron schedule lives in `vercel.json`.
+Push to `main`. Vercel auto-deploy. Cron schedule lives in `vercel.json`.
 
 ## Documentation
 
-- `docs/PLAN.md` — phased build plan
+- `docs/PLAN.md` — phased build plan (Refined v2)
 - `docs/ARCHITECTURE.md` — system design
 - `docs/DATA_MODEL.md` — schema reference
-- `docs/SECURITY.md` — threat model, encryption, RLS
-- `docs/RUNBOOK.md` — operations
-- `docs/API.md` — tRPC procedure reference
+- `docs/SECURITY.md` — threat model, encryption, RLS (TBD Phase 5)
+- `docs/RUNBOOK.md` — operations (TBD Phase 9)
+- `docs/API.md` — tRPC procedure reference (TBD Phase 9)
 
 ## License
 

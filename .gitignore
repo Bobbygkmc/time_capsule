@@ -54,3 +54,8 @@ logs/
 
 # claude code cache
 .claude/cache/
+
+/src/generated/prisma
+
+# supabase cli local state
+supabase/.temp/
